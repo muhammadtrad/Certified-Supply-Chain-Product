@@ -2,21 +2,27 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
+// finish addCheckpoint function
+// allow user to view the checkpoint data based on the product hash
 
 contract CertifiedProduct {
-    address[] private admin;
-
-    constructor(address[] _admin) {
-        console.log("Deploying a certified product");
-        admin.push(_admin);
+    address[] public administrators;
+    struct Checkpoint {
+        uint id;
+        struct[] productData;
+        bool isDefected;
+        uint dateTime;
     }
 
-    function greet() public view returns (string memory) {
-        return greeting;
+    constructor(address[] memory administrators) {
+        administrators = administrators;
     }
 
-    function setGreeting(string memory _greeting) public {
-        console.log("Changing greeting from '%s' to '%s'", greeting, _greeting);
-        greeting = _greeting;
+    function viewAdministrators() public view returns (address[] memory) {
+        return admin;
+    }
+
+    function addCheckpoint(bytes memory data, bool _isDefected) internal returns(bool) {
+
     }
 }

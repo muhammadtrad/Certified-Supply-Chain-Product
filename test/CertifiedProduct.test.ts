@@ -2,14 +2,15 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
 describe('CertifiedProduct', function (): void {
-  it("Should return the new greeting once it's changed", async function (): Promise<void> {
+  it('Should deploy the CertifiedProduct contract with defined administrator addresses', async function (): Promise<void> {
     const CertifiedProduct = await ethers.getContractFactory(
       'CertifiedProduct'
     );
-    const certifiedProduct = await CertifiedProduct.deploy([]);
+    const accounts = await ethers.provider.listAccounts();
+    const certifiedProduct = await CertifiedProduct.deploy(accounts);
     await certifiedProduct.deployed();
-    console.log('test 1', await certifiedProduct.viewAdministrators());
-    // expect(await certifiedProduct.greet()).to.equal('Hello, world!');
+    // console.log('test 1', await certifiedProduct.viewAdministrators());
+    expect((await certifiedProduct.viewAdministrators()).length).to.equal(20);
 
     // const setGreetingTx = await greeter.setGreeting('Hola, mundo!');
 
