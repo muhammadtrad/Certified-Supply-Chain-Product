@@ -13,6 +13,7 @@ contract CertifiedProduct {
         bool isDefected;
         uint dateTime;
     }
+    mapping(uint => Checkpoint) public checkpoints;
 
     constructor(address[] memory administrators) {
         administrators = administrators;
