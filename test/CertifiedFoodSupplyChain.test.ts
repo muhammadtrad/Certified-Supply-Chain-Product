@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 
-describe('CertifiedProduct', function (): void {
+describe('CertifiedFoodSupplyChain', function (): void {
   it('Should deploy the CertifiedProduct contract with defined administrator addresses', async function (): Promise<void> {
     const CertifiedProduct = await ethers.getContractFactory(
       'CertifiedProduct'
@@ -20,3 +20,16 @@ describe('CertifiedProduct', function (): void {
     // expect(await greeter.greet()).to.equal('Hola, mundo!');
   });
 });
+
+// Contract: SupplyChain
+//     Steps
+//       ✓ newStep creates a step. (90ms)
+//       ✓ newStep creates chains. (160ms)
+//       ✓ newStep maintains lastSteps. (121ms)
+//       ✓ append only on last steps (107ms)
+//       ✓ newStep allows multiple precedents. (136ms)
+//       ✓ item must be unique or the same as a precedent. (114ms)
+//       ✓ newStep records step creator. (128ms)
+//       ✓ newStep records item. (165ms)
+//       ✓ lastSteps records item. (138ms)
+//   9 passing (2s)

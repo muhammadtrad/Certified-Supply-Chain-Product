@@ -43,5 +43,8 @@
     "lint": "",
     "lint:fix": "",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.5.0"
   }
 }

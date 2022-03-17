@@ -20,3 +20,7 @@ gasReporterOutput.json
 # VS Code
 vscode-user-settings.json
 vscode-workspace-settings.json
+
+# Other
+.info
+package-lock.json
