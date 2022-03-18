@@ -1,30 +1,78 @@
-import { expect } from 'chai';
+/* eslint-disable prettier/prettier */
+import { expect, assert } from 'chai';
 import { ethers } from 'hardhat';
 
-describe('CertifiedFoodSupplyChain', function (): void {
-  it('Should deploy the CertifiedProduct contract with defined administrator addresses', async function (): Promise<void> {
+describe('CertifiedFoodSupplyChain', function () {
+  let owner: any;
+  let addr1: any;
+  let addr2: any;
+  let addr3: any;
+  let nonAdministrator: any;
+  let certifiedProduct: any;
+  before(async () => {
+    [owner, addr1, addr2, addr3, nonAdministrator] = await ethers.getSigners();
     const CertifiedProduct = await ethers.getContractFactory(
-      'CertifiedProduct'
+      'CertifiedFoodSupplyChain'
     );
-    const accounts = await ethers.provider.listAccounts();
-    const certifiedProduct = await CertifiedProduct.deploy(accounts);
+    certifiedProduct = await CertifiedProduct.deploy([
+      addr1.address,
+      addr2.address,
+      addr3.address
+    ]);
     await certifiedProduct.deployed();
-    // console.log('test 1', await certifiedProduct.viewAdministrators());
-    expect((await certifiedProduct.viewAdministrators()).length).to.equal(20);
+  });
 
-    // const setGreetingTx = await greeter.setGreeting('Hola, mundo!');
+  // describe('creating a new checkpoint as a non-administrator', () => {
+  //   it('should revert', async () => {
+  //     await expect(
+  //       certifiedProduct.connect(nonAdministrator).newCheckpoint(0, [])
+  //     ).to.be.revertedWith('Only administrator can create checkpoint');
+  //   });
+  // });
 
-    // // wait until the transaction is mined
-    // await setGreetingTx.wait();
+  describe('creating a checkpoint as the contract owner', () => {
+    let receipt: any;
+    before(async () => {
+      const tx = await certifiedProduct.connect(owner).newCheckpoint(0, []);
+      receipt = await tx.wait();
+    });
 
-    // expect(await greeter.greet()).to.equal('Hola, mundo!');
+    it('should emit a `CheckPointCreated` event', () => {
+      const event = receipt.events.find(
+        (x: any) => x.event === 'CheckPointCreated'
+      );
+      assert(event, 'Event not found!');
+    });
+  });
+
+  describe('creating a checkpoint as an administrator', () => {
+    let receipt: any;
+    before(async () => {
+      const tx = await certifiedProduct.connect(addr1).newCheckpoint(1, []);
+      receipt = await tx.wait();
+    });
+
+    it('should emit a `CheckPointCreated` event', () => {
+      const event = receipt.events.find(
+        (x: any) => x.event === 'CheckPointCreated'
+      );
+      assert(event, 'Event not found!');
+    });
+
+    it('should create a chain of checkpoints', async () => {
+      const tx2 = await certifiedProduct.connect(addr1).newCheckpoint(2, [1]);
+      const receipt2 = await tx2.wait();
+
+      const event = receipt2.events.find(
+        (x: any) => x.event === 'CheckPointCreated'
+      );
+      assert(event, 'Event not found!');
+      const prevCheckpoints = await certifiedProduct.getPrevCheckpoints(2);
+      expect(prevCheckpoints[0].toString()).equal('1');
+    });
   });
 });
 
-// Contract: SupplyChain
-//     Steps
-//       ✓ newStep creates a step. (90ms)
-//       ✓ newStep creates chains. (160ms)
 //       ✓ newStep maintains lastSteps. (121ms)
 //       ✓ append only on last steps (107ms)
 //       ✓ newStep allows multiple precedents. (136ms)
@@ -32,4 +80,11 @@ describe('CertifiedFoodSupplyChain', function (): void {
 //       ✓ newStep records step creator. (128ms)
 //       ✓ newStep records item. (165ms)
 //       ✓ lastSteps records item. (138ms)
-//   9 passing (2s)
+
+
+
+
+//       ✓ newStep creates a step. (90ms)
+//       ✓ newStep creates chains. (160ms)
+
+
