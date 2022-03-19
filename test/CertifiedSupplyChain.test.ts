@@ -2,7 +2,7 @@
 import { expect, assert } from 'chai';
 import { ethers } from 'hardhat';
 
-describe('CertifiedFoodSupplyChain', function () {
+describe('CertifiedSupplyChain', function () {
   let owner: any;
   let addr1: any;
   let addr2: any;
@@ -11,7 +11,7 @@ describe('CertifiedFoodSupplyChain', function () {
   before(async () => {
     [owner, addr1, addr2, addr3] = await ethers.getSigners();
     const CertifiedProduct = await ethers.getContractFactory(
-      'CertifiedFoodSupplyChain'
+      'CertifiedSupplyChain'
     );
     certifiedProduct = await CertifiedProduct.deploy([
       addr1.address,
@@ -64,7 +64,7 @@ describe('CertifiedFoodSupplyChain', function () {
 
     it('should maintain last checkpoints', async () => {
       const tx3 = await certifiedProduct.connect(addr1).newCheckpoint(3, [1,2]);
-      const receipt2 = await tx3.wait();
+      const receipt2 = await tx3.wait(); 
 
       const event = receipt2.events.find(
         (x: any) => x.event === 'CheckPointCreated'

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 import 'hardhat/console.sol';
 
-contract CertifiedFoodSupplyChain {
+contract CertifiedSupplyChain {
   event CheckPointCreated(uint256 checkpoint);
 
   mapping(address => bool) public administrators;
