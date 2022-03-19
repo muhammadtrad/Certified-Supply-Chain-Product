@@ -7,10 +7,9 @@ describe('CertifiedFoodSupplyChain', function () {
   let addr1: any;
   let addr2: any;
   let addr3: any;
-  let nonAdministrator: any;
   let certifiedProduct: any;
   before(async () => {
-    [owner, addr1, addr2, addr3, nonAdministrator] = await ethers.getSigners();
+    [owner, addr1, addr2, addr3] = await ethers.getSigners();
     const CertifiedProduct = await ethers.getContractFactory(
       'CertifiedFoodSupplyChain'
     );
@@ -21,14 +20,6 @@ describe('CertifiedFoodSupplyChain', function () {
     ]);
     await certifiedProduct.deployed();
   });
-
-  // describe('creating a new checkpoint as a non-administrator', () => {
-  //   it('should revert', async () => {
-  //     await expect(
-  //       certifiedProduct.connect(nonAdministrator).newCheckpoint(0, [])
-  //     ).to.be.revertedWith('Only administrator can create checkpoint');
-  //   });
-  // });
 
   describe('creating a checkpoint as the contract owner', () => {
     let receipt: any;
@@ -70,21 +61,52 @@ describe('CertifiedFoodSupplyChain', function () {
       const prevCheckpoints = await certifiedProduct.getPrevCheckpoints(2);
       expect(prevCheckpoints[0].toString()).equal('1');
     });
+
+    it('should maintain last checkpoints', async () => {
+      const tx3 = await certifiedProduct.connect(addr1).newCheckpoint(3, [1,2]);
+      const receipt2 = await tx3.wait();
+
+      const event = receipt2.events.find(
+        (x: any) => x.event === 'CheckPointCreated'
+      );
+      assert(event, 'Event not found!');
+      const isLastCheckpoint = await certifiedProduct.isLastCheckpoint(3);
+      const isLastCheckpoint2 = await certifiedProduct.isLastCheckpoint(2);
+      expect(isLastCheckpoint).equal(true);
+      expect(isLastCheckpoint2).equal(true);
+    });
+
+    it('should append on last checkpoints', async () => {
+      const prevCheckpoints = await certifiedProduct.getPrevCheckpoints(3);
+      const isLastCheckpoint3 = await certifiedProduct.isLastCheckpoint(prevCheckpoints[0].toString());
+      expect(isLastCheckpoint3).equal(true);
+    });
+
+    it('newCheckpoint should allow multiple prevCheckpoints', async () => {
+      const prevCheckpoints = await certifiedProduct.getPrevCheckpoints(3);
+      expect(prevCheckpoints.length).equal(2);
+      expect(prevCheckpoints[0].toString()).equal('1');
+      expect(prevCheckpoints[1].toString()).equal('2');
+    });
+
+    it('newCheckpoint records checkpoint creator', async () => {
+      const checkpointCreator = await certifiedProduct.getCheckpointCreator(3);
+      expect(addr1.address).equal(checkpointCreator);
+    });
+
+    it('newCheckpoint records checkpoint creator', async () => {
+      const checkpointCreator = await certifiedProduct.getCheckpointCreator(3);
+      expect(checkpointCreator).equal(addr1.address);
+    });
+
+    it('newCheckpoint records item id', async () => {
+      const checkpointItemId = await certifiedProduct.getCheckpointItemId(3);
+      expect(checkpointItemId).equal(3);
+    });
+
+    it('lastCheckpoint maps the item id to checkpoint', async () => {
+      const lastCheckpointItem = await certifiedProduct.getLastCheckpointItemId(2);
+      expect(lastCheckpointItem).equal(2);
+    });
   });
 });
-
-//       ✓ newStep maintains lastSteps. (121ms)
-//       ✓ append only on last steps (107ms)
-//       ✓ newStep allows multiple precedents. (136ms)
-//       ✓ item must be unique or the same as a precedent. (114ms)
-//       ✓ newStep records step creator. (128ms)
-//       ✓ newStep records item. (165ms)
-//       ✓ lastSteps records item. (138ms)
-
-
-
-
-//       ✓ newStep creates a step. (90ms)
-//       ✓ newStep creates chains. (160ms)
-
-
