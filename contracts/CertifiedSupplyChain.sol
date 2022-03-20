@@ -5,7 +5,7 @@ import 'hardhat/console.sol';
 contract CertifiedSupplyChain {
   event CheckPointCreated(uint256 checkpoint);
 
-  mapping(address => bool) public administrators;
+  address[] public administrators;
   struct Checkpoint {
     address creator;
     uint256 itemId;
@@ -17,10 +17,21 @@ contract CertifiedSupplyChain {
   mapping(uint256 => uint256) public lastCheckpoints;
 
   constructor(address[] memory _addresses) {
-    for (uint256 i = 0; i < _addresses.length; i++) {
-      administrators[_addresses[i]] = true;
+    administrators = _addresses;
+    administrators.push(msg.sender);
+  }
+
+  function viewAdministrators() public view returns (address[] memory) {
+      return administrators;
+  }
+
+  function isAdministrator(address _admin) public view returns(bool){
+    for (uint i=0; i<administrators.length; i++){
+      if (administrators[i] == _admin){
+        return true;
+      }
     }
-    administrators[msg.sender] = true;
+    return false;
   }
 
   function newCheckpoint(uint256 _itemId, uint256[] memory _prevCheckpoints)
@@ -28,7 +39,7 @@ contract CertifiedSupplyChain {
     returns (uint256)
   {
     require(
-      administrators[msg.sender],
+      isAdministrator(msg.sender),
       'Only administrator can create a checkpoint'
     );
     for (uint256 i = 0; i < _prevCheckpoints.length; i++) {
