@@ -29,10 +29,8 @@ const StyledContractDiv = styled.div`
   align-items: center;
 `;
 
-
 const StyledAdminDiv = styled.div`
   display: grid;
-
   grid-template-columns: 135px 2.7fr 1fr;
   grid-gap: 30px;
   place-self: center;
@@ -56,6 +54,13 @@ const StyledButton = styled.button`
   cursor: pointer;
 `;
 
+
+type Checkpoint = {
+  itemId: string,
+  creator: string,
+  prevCheckpointIds: Array<string>
+}
+
 export function CertifiedSupplyChain(): ReactElement {
   const context = useWeb3React<Provider>();
   const { library, active } = context;
@@ -67,15 +72,23 @@ export function CertifiedSupplyChain(): ReactElement {
     certifiedSupplyChainContractAddr,
     setCertifiedSupplyChainContractAddr
   ] = useState<string>('');
-  const [greeting, setGreeting] = useState<string>('');
   const [adminInput, setAdminInput] = useState<string>('');
   const [adminListInput, setAdminListInput] = useState<Array<string>>([]);
   const [adminList, setAdminList] = useState<Array<string>>([]);
 
   const [itemIdInput, setItemIdInput] = useState<string>('');
   const [prevCheckpointInput, setPrevCheckpointInput] = useState<string>('');
-  const [prevCheckpointListInput, setPrevCheckpointListInput] = useState<Array<string>>([]);
-  const [greetingInput, setGreetingInput] = useState<string>('');
+  const [prevCheckpointListInput, setPrevCheckpointListInput] = useState<
+    Array<string>
+  >([]);
+  const [checkpointId, setCheckpointId] = useState<string>('');
+  const [checkpointData, setCheckpointData] = useState<Checkpoint>({
+    itemId: '',
+    creator: '',
+    prevCheckpointIds: []
+  });
+  const [viewItemId, setViewItemId] = useState<string>('');
+  const [lastCheckpointId, setLastCheckpointId] = useState<string>('');
 
   useEffect((): void => {
     if (!library) {
@@ -85,24 +98,6 @@ export function CertifiedSupplyChain(): ReactElement {
 
     setSigner(library.getSigner());
   }, [library]);
-
-  useEffect((): void => {
-    if (!certifiedSupplyChainContract) {
-      return;
-    }
-
-    async function getGreeting(
-      certifiedSupplyChainContract: Contract
-    ): Promise<void> {
-      const _greeting = await certifiedSupplyChainContract.greet();
-
-      if (_greeting !== greeting) {
-        setGreeting(_greeting);
-      }
-    }
-
-    getGreeting(certifiedSupplyChainContract);
-  }, [certifiedSupplyChainContract, greeting]);
 
   function handleDeployContract(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -129,7 +124,6 @@ export function CertifiedSupplyChain(): ReactElement {
 
         const administrators =
           await certifiedSupplyChainContract.viewAdministrators();
-        console.log('administrators', administrators);
         setCertifiedSupplyChainContract(certifiedSupplyChainContract);
         setAdminList(administrators);
 
@@ -163,15 +157,21 @@ export function CertifiedSupplyChain(): ReactElement {
     setAdminInput('');
   }
 
-  function handleAddPreviousCheckpoint(event: MouseEvent<HTMLButtonElement>): void {
+  function handleAddPreviousCheckpoint(
+    event: MouseEvent<HTMLButtonElement>
+  ): void {
     event.preventDefault();
-    const list = [...prevCheckpointListInput];
-    list.push(prevCheckpointInput);
-    setPrevCheckpointListInput(list);
-    setPrevCheckpointInput('');
+    if (prevCheckpointInput.length) {
+      const list = [...prevCheckpointListInput];
+      list.push(prevCheckpointInput);
+      setPrevCheckpointListInput(list);
+      setPrevCheckpointInput('');
+    }
   }
 
-  function handleNewCheckpointSubmit(event: MouseEvent<HTMLButtonElement>): void {
+  function handleNewCheckpointSubmit(
+    event: MouseEvent<HTMLButtonElement>
+  ): void {
     event.preventDefault();
     // modify this to create new checkpoint
     if (!certifiedSupplyChainContract) {
@@ -179,40 +179,113 @@ export function CertifiedSupplyChain(): ReactElement {
       return;
     }
 
-    if (!greetingInput) {
-      window.alert('Greeting cannot be empty');
+    if (!itemIdInput) {
+      window.alert('Item ID cannot be empty');
       return;
     }
 
-    async function submitGreeting(
+    async function submitNewCheckpoint(
       certifiedSupplyChainContract: Contract
     ): Promise<void> {
       try {
-        const setGreetingTxn = await certifiedSupplyChainContract.setGreeting(
-          greetingInput
+        const prevCheckpointList = prevCheckpointListInput.map((cp) =>
+          parseInt(cp)
         );
-
-        await setGreetingTxn.wait();
-
-        const newGreeting = await certifiedSupplyChainContract.greet();
-        window.alert(`Success!\n\nGreeting is now: ${newGreeting}`);
-
-        if (newGreeting !== greeting) {
-          setGreeting(newGreeting);
-        }
+        const newCheckpointTxn =
+          await certifiedSupplyChainContract.newCheckpoint(
+            parseInt(itemIdInput),
+            prevCheckpointList
+          );
+        await newCheckpointTxn.wait();
+        const checkpointId = await certifiedSupplyChainContract.getLastCheckpointItemId(parseInt(itemIdInput));
+        window.alert(`Success!\n\nNew checkpoint created with checkpoint ID ${checkpointId}!`);
       } catch (error: any) {
         window.alert(
           'Error!' + (error && error.message ? `\n\n${error.message}` : '')
         );
       }
     }
-
-    submitGreeting(certifiedSupplyChainContract);
+    submitNewCheckpoint(certifiedSupplyChainContract);
   }
 
-  function handlePreviousCheckpointChange(event: ChangeEvent<HTMLInputElement>): void {
+  function handleViewCheckpoint(
+    event: MouseEvent<HTMLButtonElement>
+  ): void {
+    event.preventDefault();
+    if (!certifiedSupplyChainContract) {
+      window.alert('Undefined certifiedSupplyChainContract');
+      return;
+    }
+
+    if (!checkpointId) {
+      window.alert('Checkpoint ID cannot be empty');
+      return;
+    }
+
+    async function viewCheckpoint(
+      certifiedSupplyChainContract: Contract
+    ): Promise<void> {
+      try {
+        const data =
+          await certifiedSupplyChainContract.getCheckpointData(
+            parseInt(checkpointId)
+          );
+          console.log('data', data);
+        
+      } catch (error: any) {
+        window.alert(
+          'Error!' + (error && error.message ? `\n\n${error.message}` : '')
+        );
+      }
+    }
+    viewCheckpoint(certifiedSupplyChainContract);
+  }
+
+  function handleViewLastCheckpointByItemId(
+    event: MouseEvent<HTMLButtonElement>
+  ): void {
+    event.preventDefault();
+    if (!certifiedSupplyChainContract) {
+      window.alert('Undefined certifiedSupplyChainContract');
+      return;
+    }
+
+    if (!viewItemId) {
+      window.alert('Item ID cannot be empty');
+      return;
+    }
+
+    async function viewLastCheckpoint(
+      certifiedSupplyChainContract: Contract
+    ): Promise<void> {
+      try {
+        const lastCheckpoint =
+          await certifiedSupplyChainContract.getLastCheckpointItemId(
+            parseInt(viewItemId)
+          );
+          console.log('lastCheckpoint', lastCheckpoint);
+          setLastCheckpointId(lastCheckpoint.toString());
+      } catch (error: any) {
+        window.alert(
+          'Error!' + (error && error.message ? `\n\n${error.message}` : '')
+        );
+      }
+    }
+    viewLastCheckpoint(certifiedSupplyChainContract);
+  }
+
+  function handlePreviousCheckpointChange(
+    event: ChangeEvent<HTMLInputElement>
+  ): void {
     event.preventDefault();
     setPrevCheckpointInput(event.target.value);
+  }
+
+  function handleCheckpointChange(
+    event: ChangeEvent<HTMLInputElement>
+  ): void {
+    event.preventDefault();
+    setCheckpointId(event.target.value);
   }
 
   function handleItemIdInputChange(event: ChangeEvent<HTMLInputElement>): void {
@@ -220,46 +293,18 @@ export function CertifiedSupplyChain(): ReactElement {
     setItemIdInput(event.target.value);
   }
 
-
-  function handleGreetingSubmit(event: MouseEvent<HTMLButtonElement>): void {
-    event.preventDefault();
-
-    if (!certifiedSupplyChainContract) {
-      window.alert('Undefined certifiedSupplyChainContract');
-      return;
-    }
-
-    if (!greetingInput) {
-      window.alert('Greeting cannot be empty');
-      return;
-    }
-
-    async function submitGreeting(
-      certifiedSupplyChainContract: Contract
-    ): Promise<void> {
-      try {
-        const setGreetingTxn = await certifiedSupplyChainContract.setGreeting(
-          greetingInput
-        );
-
-        await setGreetingTxn.wait();
-
-        const newGreeting = await certifiedSupplyChainContract.greet();
-        window.alert(`Success!\n\nGreeting is now: ${newGreeting}`);
-
-        if (newGreeting !== greeting) {
-          setGreeting(newGreeting);
-        }
-      } catch (error: any) {
-        window.alert(
-          'Error!' + (error && error.message ? `\n\n${error.message}` : '')
-        );
-      }
-    }
-
-    submitGreeting(certifiedSupplyChainContract);
+  function handleClearAdminList() {
+    setAdminListInput([]);
   }
 
+  function handleClearPrevCheckpoints() {
+    setPrevCheckpointListInput([]);
+  }
+
+  function handleViewItemIdChange(event: ChangeEvent<HTMLInputElement>): void {
+    event.preventDefault();
+    setViewItemId(event.target.value);
+  }
 
   return (
     <>
@@ -275,12 +320,14 @@ export function CertifiedSupplyChain(): ReactElement {
         ></StyledInput>
         <StyledButton
           disabled={!active || certifiedSupplyChainContract ? true : false}
-        style={{
-          cursor:
-            !active || certifiedSupplyChainContract ? 'not-allowed' : 'pointer',
-          borderColor:
-            !active || certifiedSupplyChainContract ? 'unset' : 'blue'
-        }}
+          style={{
+            cursor:
+              !active || certifiedSupplyChainContract
+                ? 'not-allowed'
+                : 'pointer',
+            borderColor:
+              !active || certifiedSupplyChainContract ? 'unset' : 'blue'
+          }}
           onClick={handleAddAdministrator}
         >
           Add
@@ -298,6 +345,15 @@ export function CertifiedSupplyChain(): ReactElement {
             <em>{`<No administrators has been added>`}</em>
           )}
         </div>
+        <StyledButton
+          style={{
+            cursor: 'pointer',
+            borderColor: 'blue'
+          }}
+          onClick={handleClearAdminList}
+        >
+          Clear
+        </StyledButton>
       </StyledAdminDiv>
       <StyledDeployContractButton
         disabled={!active || certifiedSupplyChainContract ? true : false}
@@ -315,7 +371,7 @@ export function CertifiedSupplyChain(): ReactElement {
       </StyledDeployContractButton>
       <SectionDivider />
       <StyledContractDiv style={{ maxWidth: '710px' }}>
-        <StyledLabel>Contract addr</StyledLabel>
+        <StyledLabel>Contract address</StyledLabel>
         <div>
           {certifiedSupplyChainContractAddr ? (
             certifiedSupplyChainContractAddr
@@ -351,7 +407,9 @@ export function CertifiedSupplyChain(): ReactElement {
         ></StyledInput>
         <div></div>
 
-        <StyledLabel htmlFor="checkpointInput">Previous Checkpoint</StyledLabel>
+        <StyledLabel htmlFor="checkpointInput">
+          Previous Checkpoint ID
+        </StyledLabel>
         <StyledInput
           value={prevCheckpointInput}
           id="checkpointInput"
@@ -369,9 +427,9 @@ export function CertifiedSupplyChain(): ReactElement {
           }}
           onClick={handleAddPreviousCheckpoint}
         >
-          Add previous checkpoint
+          Add previous checkpoint ID
         </StyledButton>
-        <StyledLabel>Previous Checkpoints</StyledLabel>
+        <StyledLabel>Previous Checkpoints ID</StyledLabel>
         <div>
           {prevCheckpointListInput.length ? (
             prevCheckpointListInput.reduce((acc, curr, idx) => {
@@ -384,7 +442,70 @@ export function CertifiedSupplyChain(): ReactElement {
             <em>{`<No previous checkpoints has been added>`}</em>
           )}
         </div>
+        <StyledButton
+          style={{
+            cursor: 'pointer',
+            borderColor: 'blue'
+          }}
+          onClick={handleClearPrevCheckpoints}
+        >
+          Clear
+        </StyledButton>
+      </StyledContractDiv>
+      <StyledDeployContractButton
+        style={{
+          height: '100%',
+          width: '300px',
+          cursor: 'pointer',
+          borderColor: 'blue'
+        }}
+        onClick={handleNewCheckpointSubmit}
+      >
+        Create New Checkpoint ID
+      </StyledDeployContractButton>
+      <SectionDivider />
+      <StyledContractDiv style={{ maxWidth: '710px' }}>
+      <StyledLabel htmlFor="viewItemId">
+          Item ID
+        </StyledLabel>
+        <StyledInput
+          value={viewItemId}
+          id="checkpointId"
+          type="text"
+          placeholder={`enter an Item ID`}
+          onChange={handleViewItemIdChange}
+          style={{ fontStyle: 'italic' }}
+        ></StyledInput>
+        <StyledButton
+          style={{
+            height: '100%',
+            width: '200px',
+            cursor: 'pointer',
+            borderColor: 'blue'
+          }}
+          onClick={handleViewLastCheckpointByItemId}
+        >
+          View Last Checkpoint ID
+        </StyledButton>
+        <StyledLabel>Last Checkpoint ID</StyledLabel>
+        <div>
+          {lastCheckpointId}
+        </div>
+      </StyledContractDiv>
+      <SectionDivider />
 
+      <StyledContractDiv style={{ maxWidth: '710px' }}>
+      <StyledLabel htmlFor="checkpointInput">
+           Checkpoint ID
+        </StyledLabel>
+        <StyledInput
+          value={checkpointId}
+          id="checkpointId"
+          type="text"
+          placeholder={`enter a checkpoint ID`}
+          onChange={handleCheckpointChange}
+          style={{ fontStyle: 'italic' }}
+        ></StyledInput>
         <StyledButton
           style={{
             height: '100%',
@@ -392,10 +513,34 @@ export function CertifiedSupplyChain(): ReactElement {
             cursor: 'pointer',
             borderColor: 'blue'
           }}
-          onClick={handleNewCheckpointSubmit}
+          onClick={handleViewCheckpoint}
         >
-          Create New Checkpoint
+          View checkpoint Data
         </StyledButton>
+        <StyledLabel>Creator</StyledLabel>
+        <div>
+          {checkpointData.creator}
+        </div>
+        <div></div>
+        <StyledLabel>Item ID</StyledLabel>
+        <div>
+          {checkpointData.itemId}
+        </div>
+        <div></div>
+        <StyledLabel>Previous Checkpoints IDs</StyledLabel>
+        <div>
+          {checkpointData.prevCheckpointIds.length ? (
+            checkpointData.prevCheckpointIds.reduce((acc, curr, idx) => {
+              if (idx < checkpointData.prevCheckpointIds.length - 1) {
+                return acc + curr + ', ';
+              }
+              return acc + curr;
+            }, '')
+          ) : (
+            <em>{`<No previous checkpoints available>`}</em>
+          )}
+        </div>
+        <div></div>
       </StyledContractDiv>
     </>
   );

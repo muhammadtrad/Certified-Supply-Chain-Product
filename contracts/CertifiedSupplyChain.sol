@@ -19,15 +19,16 @@ contract CertifiedSupplyChain {
   constructor(address[] memory _addresses) {
     administrators = _addresses;
     administrators.push(msg.sender);
+    totalCheckpoints = 0;
   }
 
   function viewAdministrators() public view returns (address[] memory) {
-      return administrators;
+    return administrators;
   }
 
-  function isAdministrator(address _admin) public view returns(bool){
-    for (uint i=0; i<administrators.length; i++){
-      if (administrators[i] == _admin){
+  function isAdministrator(address _admin) public view returns (bool) {
+    for (uint256 i = 0; i < administrators.length; i++) {
+      if (administrators[i] == _admin) {
         return true;
       }
     }
@@ -95,6 +96,23 @@ contract CertifiedSupplyChain {
     returns (uint256)
   {
     return checkpoints[_checkpoint].itemId;
+  }
+
+  function getCheckpointData(uint256 _checkpoint)
+    public
+    view
+    returns (uint256, uint256, uint256[] memory)
+  {
+    Checkpoint c = checkpoints[_checkpoint];
+    return (c.itemId, c.creator, c.prevCheckpoints);
+  }
+
+  function getLastCheckpointItemId(uint256 _itemId)
+    public
+    view
+    returns (uint256)
+  {
+    return lastCheckpoints[_itemId];
   }
 
   function getLastCheckpointItemId(uint256 _itemId)
