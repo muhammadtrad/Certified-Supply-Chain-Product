@@ -225,13 +225,26 @@ export function CertifiedSupplyChain(): ReactElement {
     async function viewCheckpoint(
       certifiedSupplyChainContract: Contract
     ): Promise<void> {
+      const parsedCheckpointId = parseInt(checkpointId);
       try {
-        const data =
-          await certifiedSupplyChainContract.getCheckpointData(
-            parseInt(checkpointId)
+        const checkpointItemId =
+          await certifiedSupplyChainContract.getCheckpointItemId(
+            parsedCheckpointId
           );
-          console.log('data', data);
-        
+
+          const checkpointCreator =
+          await certifiedSupplyChainContract.getCheckpointCreator(
+            parsedCheckpointId
+          );
+          const checkpointPrevCheckpoints =
+          await certifiedSupplyChainContract.getPrevCheckpoints(
+            parsedCheckpointId
+          );
+        setCheckpointData({
+          itemId: checkpointItemId.toString(),
+          creator: checkpointCreator,
+          prevCheckpointIds: checkpointPrevCheckpoints
+        })
       } catch (error: any) {
         window.alert(
           'Error!' + (error && error.message ? `\n\n${error.message}` : '')
@@ -263,7 +276,6 @@ export function CertifiedSupplyChain(): ReactElement {
           await certifiedSupplyChainContract.getLastCheckpointItemId(
             parseInt(viewItemId)
           );
-          console.log('lastCheckpoint', lastCheckpoint);
           setLastCheckpointId(lastCheckpoint.toString());
       } catch (error: any) {
         window.alert(

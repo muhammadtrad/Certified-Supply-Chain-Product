@@ -98,23 +98,6 @@ contract CertifiedSupplyChain {
     return checkpoints[_checkpoint].itemId;
   }
 
-  function getCheckpointData(uint256 _checkpoint)
-    public
-    view
-    returns (uint256, uint256, uint256[] memory)
-  {
-    Checkpoint c = checkpoints[_checkpoint];
-    return (c.itemId, c.creator, c.prevCheckpoints);
-  }
-
-  function getLastCheckpointItemId(uint256 _itemId)
-    public
-    view
-    returns (uint256)
-  {
-    return lastCheckpoints[_itemId];
-  }
-
   function getLastCheckpointItemId(uint256 _itemId)
     public
     view
