@@ -21,11 +21,20 @@ const StyledDeployContractButton = styled.button`
   place-self: center;
 `;
 
-const StyledGreetingDiv = styled.div`
+const StyledContractDiv = styled.div`
   display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
   grid-template-columns: 135px 2.7fr 1fr;
-  grid-gap: 10px;
+  grid-gap: 30px;
+  place-self: center;
+  align-items: center;
+`;
+
+
+const StyledAdminDiv = styled.div`
+  display: grid;
+
+  grid-template-columns: 135px 2.7fr 1fr;
+  grid-gap: 30px;
   place-self: center;
   align-items: center;
 `;
@@ -62,6 +71,10 @@ export function CertifiedSupplyChain(): ReactElement {
   const [adminInput, setAdminInput] = useState<string>('');
   const [adminListInput, setAdminListInput] = useState<Array<string>>([]);
   const [adminList, setAdminList] = useState<Array<string>>([]);
+
+  const [itemIdInput, setItemIdInput] = useState<string>('');
+  const [prevCheckpointInput, setPrevCheckpointInput] = useState<string>('');
+  const [prevCheckpointListInput, setPrevCheckpointListInput] = useState<Array<string>>([]);
   const [greetingInput, setGreetingInput] = useState<string>('');
 
   useEffect((): void => {
@@ -137,22 +150,76 @@ export function CertifiedSupplyChain(): ReactElement {
     deployCertifiedSupplyChainContract(signer);
   }
 
-  function handleGreetingChange(event: ChangeEvent<HTMLInputElement>): void {
-    event.preventDefault();
-    setGreetingInput(event.target.value);
-  }
-
   function handleAdminInputChange(event: ChangeEvent<HTMLInputElement>): void {
     event.preventDefault();
     setAdminInput(event.target.value);
   }
 
-  function handleAdministratorAdd(event: MouseEvent<HTMLButtonElement>): void {
+  function handleAddAdministrator(event: MouseEvent<HTMLButtonElement>): void {
     event.preventDefault();
     const list = [...adminListInput];
     list.push(adminInput);
     setAdminListInput(list);
+    setAdminInput('');
   }
+
+  function handleAddPreviousCheckpoint(event: MouseEvent<HTMLButtonElement>): void {
+    event.preventDefault();
+    const list = [...prevCheckpointListInput];
+    list.push(prevCheckpointInput);
+    setPrevCheckpointListInput(list);
+    setPrevCheckpointInput('');
+  }
+
+  function handleNewCheckpointSubmit(event: MouseEvent<HTMLButtonElement>): void {
+    event.preventDefault();
+    // modify this to create new checkpoint
+    if (!certifiedSupplyChainContract) {
+      window.alert('Undefined certifiedSupplyChainContract');
+      return;
+    }
+
+    if (!greetingInput) {
+      window.alert('Greeting cannot be empty');
+      return;
+    }
+
+    async function submitGreeting(
+      certifiedSupplyChainContract: Contract
+    ): Promise<void> {
+      try {
+        const setGreetingTxn = await certifiedSupplyChainContract.setGreeting(
+          greetingInput
+        );
+
+        await setGreetingTxn.wait();
+
+        const newGreeting = await certifiedSupplyChainContract.greet();
+        window.alert(`Success!\n\nGreeting is now: ${newGreeting}`);
+
+        if (newGreeting !== greeting) {
+          setGreeting(newGreeting);
+        }
+      } catch (error: any) {
+        window.alert(
+          'Error!' + (error && error.message ? `\n\n${error.message}` : '')
+        );
+      }
+    }
+
+    submitGreeting(certifiedSupplyChainContract);
+  }
+
+  function handlePreviousCheckpointChange(event: ChangeEvent<HTMLInputElement>): void {
+    event.preventDefault();
+    setPrevCheckpointInput(event.target.value);
+  }
+
+  function handleItemIdInputChange(event: ChangeEvent<HTMLInputElement>): void {
+    event.preventDefault();
+    setItemIdInput(event.target.value);
+  }
+
 
   function handleGreetingSubmit(event: MouseEvent<HTMLButtonElement>): void {
     event.preventDefault();
@@ -193,39 +260,50 @@ export function CertifiedSupplyChain(): ReactElement {
     submitGreeting(certifiedSupplyChainContract);
   }
 
+
   return (
     <>
-      <StyledLabel htmlFor="adminListInput">Administrators</StyledLabel>
-      <StyledInput
-        id="adminListInput"
-        type="text"
-        placeholder={`add an administrator address`}
-        onChange={handleAdminInputChange}
-        style={{ fontStyle: greeting ? 'normal' : 'italic' }}
-      ></StyledInput>
-      <StyledButton
-        disabled={false}
+      <StyledAdminDiv style={{ maxWidth: '710px' }}>
+        <StyledLabel htmlFor="adminListInput">Administrators</StyledLabel>
+        <StyledInput
+          value={adminInput}
+          id="adminListInput"
+          type="text"
+          placeholder={`add an administrator address`}
+          onChange={handleAdminInputChange}
+          style={{ fontStyle: 'italic' }}
+        ></StyledInput>
+        <StyledButton
+          disabled={!active || certifiedSupplyChainContract ? true : false}
         style={{
-          cursor: 'pointer',
-          borderColor: 'blue'
+          cursor:
+            !active || certifiedSupplyChainContract ? 'not-allowed' : 'pointer',
+          borderColor:
+            !active || certifiedSupplyChainContract ? 'unset' : 'blue'
         }}
-        onClick={handleAdministratorAdd}
-      >
-        Add
-      </StyledButton>
-      <StyledLabel>Current Administrators for Contract</StyledLabel>
-      <div>
-        {adminListInput.reduce((acc, curr, idx) => {
-          if (idx < adminListInput.length - 1) {
-            return acc + curr + ', ';
-          }
-          return acc + curr;
-        }, '')}
-      </div>
+          onClick={handleAddAdministrator}
+        >
+          Add
+        </StyledButton>
+        <StyledLabel>Current Administrators</StyledLabel>
+        <div>
+          {adminListInput.length ? (
+            adminListInput.reduce((acc, curr, idx) => {
+              if (idx < adminListInput.length - 1) {
+                return acc + curr + ', ';
+              }
+              return acc + curr;
+            }, '')
+          ) : (
+            <em>{`<No administrators has been added>`}</em>
+          )}
+        </div>
+      </StyledAdminDiv>
       <StyledDeployContractButton
         disabled={!active || certifiedSupplyChainContract ? true : false}
         style={{
           height: '100%',
+          width: '300px',
           cursor:
             !active || certifiedSupplyChainContract ? 'not-allowed' : 'pointer',
           borderColor:
@@ -233,10 +311,10 @@ export function CertifiedSupplyChain(): ReactElement {
         }}
         onClick={handleDeployContract}
       >
-        Deploy CertifiedSupplyChain Contract
+        Deploy <em>CertifiedSupplyChain</em> Contract
       </StyledDeployContractButton>
       <SectionDivider />
-      <StyledGreetingDiv>
+      <StyledContractDiv style={{ maxWidth: '710px' }}>
         <StyledLabel>Contract addr</StyledLabel>
         <div>
           {certifiedSupplyChainContractAddr ? (
@@ -247,7 +325,7 @@ export function CertifiedSupplyChain(): ReactElement {
         </div>
         {/* empty placeholder div below to provide empty first row, 3rd col div for a 2x3 grid */}
         <div></div>
-        <StyledLabel>Current Administrators</StyledLabel>
+        <StyledLabel>Contract Administrators</StyledLabel>
         <div>
           {adminList.length ? (
             adminList.reduce((acc, curr, idx) => {
@@ -262,29 +340,63 @@ export function CertifiedSupplyChain(): ReactElement {
         </div>
         {/* empty placeholder div below to provide empty first row, 3rd col div for a 2x3 grid */}
         <div></div>
-        <StyledLabel htmlFor="greetingInput">Set new greeting</StyledLabel>
+        <StyledLabel htmlFor="itemIdInput">Item ID</StyledLabel>
         <StyledInput
-          id="greetingInput"
+          value={itemIdInput}
+          id="itemIdInput"
           type="text"
-          placeholder={greeting ? '' : '<Contract not yet deployed>'}
-          onChange={handleGreetingChange}
-          style={{ fontStyle: greeting ? 'normal' : 'italic' }}
+          placeholder={`enter the item ID`}
+          onChange={handleItemIdInputChange}
+          style={{ fontStyle: 'italic' }}
+        ></StyledInput>
+        <div></div>
+
+        <StyledLabel htmlFor="checkpointInput">Previous Checkpoint</StyledLabel>
+        <StyledInput
+          value={prevCheckpointInput}
+          id="checkpointInput"
+          type="text"
+          placeholder={`enter a checkpoint`}
+          onChange={handlePreviousCheckpointChange}
+          style={{ fontStyle: 'italic' }}
         ></StyledInput>
         <StyledButton
-          disabled={!active || !certifiedSupplyChainContract ? true : false}
           style={{
-            cursor:
-              !active || !certifiedSupplyChainContract
-                ? 'not-allowed'
-                : 'pointer',
-            borderColor:
-              !active || !certifiedSupplyChainContract ? 'unset' : 'blue'
+            height: '100%',
+            width: '150px',
+            cursor: 'pointer',
+            borderColor: 'blue'
           }}
-          onClick={handleGreetingSubmit}
+          onClick={handleAddPreviousCheckpoint}
         >
-          Submit
+          Add previous checkpoint
         </StyledButton>
-      </StyledGreetingDiv>
+        <StyledLabel>Previous Checkpoints</StyledLabel>
+        <div>
+          {prevCheckpointListInput.length ? (
+            prevCheckpointListInput.reduce((acc, curr, idx) => {
+              if (idx < prevCheckpointListInput.length - 1) {
+                return acc + curr + ', ';
+              }
+              return acc + curr;
+            }, '')
+          ) : (
+            <em>{`<No previous checkpoints has been added>`}</em>
+          )}
+        </div>
+
+        <StyledButton
+          style={{
+            height: '100%',
+            width: '150px',
+            cursor: 'pointer',
+            borderColor: 'blue'
+          }}
+          onClick={handleNewCheckpointSubmit}
+        >
+          Create New Checkpoint
+        </StyledButton>
+      </StyledContractDiv>
     </>
   );
 }
