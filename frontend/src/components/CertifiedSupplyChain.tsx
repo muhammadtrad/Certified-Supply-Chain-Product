@@ -52,10 +52,16 @@ export function CertifiedSupplyChain(): ReactElement {
   const { library, active } = context;
 
   const [signer, setSigner] = useState<Signer>();
-  const [certifiedSupplyChainContract, setCertifiedSupplyChainContract] = useState<Contract>();
-  const [certifiedSupplyChainContractAddr, setCertifiedSupplyChainContractAddr] = useState<string>('');
+  const [certifiedSupplyChainContract, setCertifiedSupplyChainContract] =
+    useState<Contract>();
+  const [
+    certifiedSupplyChainContractAddr,
+    setCertifiedSupplyChainContractAddr
+  ] = useState<string>('');
   const [greeting, setGreeting] = useState<string>('');
-  const [admin, setAdmin] = useState<[]>([])
+  const [adminInput, setAdminInput] = useState<string>('');
+  const [adminListInput, setAdminListInput] = useState<Array<string>>([]);
+  const [adminList, setAdminList] = useState<Array<string>>([]);
   const [greetingInput, setGreetingInput] = useState<string>('');
 
   useEffect((): void => {
@@ -72,7 +78,9 @@ export function CertifiedSupplyChain(): ReactElement {
       return;
     }
 
-    async function getGreeting(certifiedSupplyChainContract: Contract): Promise<void> {
+    async function getGreeting(
+      certifiedSupplyChainContract: Contract
+    ): Promise<void> {
       const _greeting = await certifiedSupplyChainContract.greet();
 
       if (_greeting !== greeting) {
@@ -91,26 +99,34 @@ export function CertifiedSupplyChain(): ReactElement {
       return;
     }
 
-    async function deployCertifiedSupplyChainContract(signer: Signer): Promise<void> {
+    async function deployCertifiedSupplyChainContract(
+      signer: Signer
+    ): Promise<void> {
       const CertifiedSupplyChain = new ethers.ContractFactory(
         CertifiedSupplyChainArtifact.abi,
         CertifiedSupplyChainArtifact.bytecode,
         signer
       );
-
       try {
-        const certifiedSupplyChainContract = await CertifiedSupplyChain.deploy([]);
+        const certifiedSupplyChainContract = await CertifiedSupplyChain.deploy(
+          adminListInput
+        );
 
         await certifiedSupplyChainContract.deployed();
 
-        const administrators = await certifiedSupplyChainContract.greet();
-
+        const administrators =
+          await certifiedSupplyChainContract.viewAdministrators();
+        console.log('administrators', administrators);
         setCertifiedSupplyChainContract(certifiedSupplyChainContract);
-        setAdmin(administrators);
+        setAdminList(administrators);
 
-        window.alert(`CertifiedSupplyChain deployed to: ${certifiedSupplyChainContract.address}`);
+        window.alert(
+          `CertifiedSupplyChain deployed to: ${certifiedSupplyChainContract.address}`
+        );
 
-        setCertifiedSupplyChainContractAddr(certifiedSupplyChainContract.address);
+        setCertifiedSupplyChainContractAddr(
+          certifiedSupplyChainContract.address
+        );
       } catch (error: any) {
         window.alert(
           'Error!' + (error && error.message ? `\n\n${error.message}` : '')
@@ -126,6 +142,18 @@ export function CertifiedSupplyChain(): ReactElement {
     setGreetingInput(event.target.value);
   }
 
+  function handleAdminInputChange(event: ChangeEvent<HTMLInputElement>): void {
+    event.preventDefault();
+    setAdminInput(event.target.value);
+  }
+
+  function handleAdministratorAdd(event: MouseEvent<HTMLButtonElement>): void {
+    event.preventDefault();
+    const list = [...adminListInput];
+    list.push(adminInput);
+    setAdminListInput(list);
+  }
+
   function handleGreetingSubmit(event: MouseEvent<HTMLButtonElement>): void {
     event.preventDefault();
 
@@ -139,9 +167,13 @@ export function CertifiedSupplyChain(): ReactElement {
       return;
     }
 
-    async function submitGreeting(certifiedSupplyChainContract: Contract): Promise<void> {
+    async function submitGreeting(
+      certifiedSupplyChainContract: Contract
+    ): Promise<void> {
       try {
-        const setGreetingTxn = await certifiedSupplyChainContract.setGreeting(greetingInput);
+        const setGreetingTxn = await certifiedSupplyChainContract.setGreeting(
+          greetingInput
+        );
 
         await setGreetingTxn.wait();
 
@@ -163,12 +195,41 @@ export function CertifiedSupplyChain(): ReactElement {
 
   return (
     <>
+      <StyledLabel htmlFor="adminListInput">Administrators</StyledLabel>
+      <StyledInput
+        id="adminListInput"
+        type="text"
+        placeholder={`add an administrator address`}
+        onChange={handleAdminInputChange}
+        style={{ fontStyle: greeting ? 'normal' : 'italic' }}
+      ></StyledInput>
+      <StyledButton
+        disabled={false}
+        style={{
+          cursor: 'pointer',
+          borderColor: 'blue'
+        }}
+        onClick={handleAdministratorAdd}
+      >
+        Add
+      </StyledButton>
+      <StyledLabel>Current Administrators for Contract</StyledLabel>
+      <div>
+        {adminListInput.reduce((acc, curr, idx) => {
+          if (idx < adminListInput.length - 1) {
+            return acc + curr + ', ';
+          }
+          return acc + curr;
+        }, '')}
+      </div>
       <StyledDeployContractButton
         disabled={!active || certifiedSupplyChainContract ? true : false}
         style={{
           height: '100%',
-          cursor: !active || certifiedSupplyChainContract ? 'not-allowed' : 'pointer',
-          borderColor: !active || certifiedSupplyChainContract ? 'unset' : 'blue'
+          cursor:
+            !active || certifiedSupplyChainContract ? 'not-allowed' : 'pointer',
+          borderColor:
+            !active || certifiedSupplyChainContract ? 'unset' : 'blue'
         }}
         onClick={handleDeployContract}
       >
@@ -186,9 +247,18 @@ export function CertifiedSupplyChain(): ReactElement {
         </div>
         {/* empty placeholder div below to provide empty first row, 3rd col div for a 2x3 grid */}
         <div></div>
-        <StyledLabel>Current greeting</StyledLabel>
+        <StyledLabel>Current Administrators</StyledLabel>
         <div>
-          {greeting ? greeting : <em>{`<Contract not yet deployed>`}</em>}
+          {adminList.length ? (
+            adminList.reduce((acc, curr, idx) => {
+              if (idx < adminList.length - 1) {
+                return acc + curr + ', ';
+              }
+              return acc + curr;
+            }, '')
+          ) : (
+            <em>{`<Contract not yet deployed>`}</em>
+          )}
         </div>
         {/* empty placeholder div below to provide empty first row, 3rd col div for a 2x3 grid */}
         <div></div>
@@ -203,8 +273,12 @@ export function CertifiedSupplyChain(): ReactElement {
         <StyledButton
           disabled={!active || !certifiedSupplyChainContract ? true : false}
           style={{
-            cursor: !active || !certifiedSupplyChainContract ? 'not-allowed' : 'pointer',
-            borderColor: !active || !certifiedSupplyChainContract ? 'unset' : 'blue'
+            cursor:
+              !active || !certifiedSupplyChainContract
+                ? 'not-allowed'
+                : 'pointer',
+            borderColor:
+              !active || !certifiedSupplyChainContract ? 'unset' : 'blue'
           }}
           onClick={handleGreetingSubmit}
         >
