@@ -1,10 +1,10 @@
-# Starter React Typescript Ethers.js Hardhat Project
+**Certified Supply Chain Product**
+
+This is a blockchain-based product providing traceability of the supply chain for certified food. 
+![image](https://user-images.githubusercontent.com/25446467/160332550-1804ef29-81d8-46cc-9ae0-330f2d99dda9.png)
+
 
 This repo contains a Hardhat and React Dapp starter project. The React Dapp in the `frontend` dir of this repo interacts with Hardhat's example `Greeter.sol` smart contract running on a local blockchain. The Hardhat `Greeter.sol` example contract is the boilerplate contract that Hardhat creates when creating a new Hardhat project via `yarn hardhat init`.
-
-The React Dapp in this repo looks like this:
-
-![React Dapp](https://res.cloudinary.com/divzjiip8/image/upload/c_scale,w_1280/v1641785505/Screen_Shot_2022-01-03_at_3.52.58_PM_n7ror7.png)
 
 The Dapp uses the [@web3-react npm package's](https://www.npmjs.com/package/web3-react) injected web3 provider to connect to MetaMask and demonstrates the following functionality:
 * Connecting a Dapp to the blockchain
